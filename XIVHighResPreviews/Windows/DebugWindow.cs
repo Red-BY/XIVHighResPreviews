@@ -26,7 +26,7 @@ public class DebugWindow : Window, IDisposable
 
     public override void Draw()
     {
-        DrawDebugOptions();
+        DrawTools();
 
         ImGuiHelpers.ScaledDummy(8f);
         ImGui.Separator();
@@ -35,7 +35,7 @@ public class DebugWindow : Window, IDisposable
         DrawInspector();
     }
 
-    private void DrawDebugOptions()
+    private void DrawTools()
     {
         var cfg = plugin.Configuration;
 
@@ -64,10 +64,10 @@ public class DebugWindow : Window, IDisposable
             cfg.Save();
         }
 
-        var logVp = cfg.LogPreviewTextureCreates;
+        var logVp = cfg.LogViewportScales;
         if (ImGui.Checkbox("Log viewport scales", ref logVp))
         {
-            cfg.LogPreviewTextureCreates = logVp;
+            cfg.LogViewportScales = logVp;
             cfg.Save();
         }
 
@@ -181,7 +181,7 @@ public class DebugWindow : Window, IDisposable
             new Vector4(1f, 0.55f, 0.2f, 1f),
             plugin.Configuration.AutoUpscaleLiveCharaView && plugin.Configuration.EnablePreviewUpscale
                 ? $"{native} slot(s) still at native size — auto-upscale should replace them shortly."
-                : $"{native} slot(s) still at native size. Enable upscaling / auto-upscale, or use “Upscale live CharaView now”.");
+                : $"{native} slot(s) still at native size. Enable upscaling / auto-apply, or use “Upscale live CharaView now”.");
     }
 
     private static string ShortFormat(FFXIVClientStructs.FFXIV.Client.Graphics.Kernel.TextureFormat format)

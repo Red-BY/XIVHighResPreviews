@@ -34,7 +34,6 @@ public class MainWindow : Window, IDisposable
         {
             cfg.EnablePreviewUpscale = enabled;
             cfg.Save();
-            // Off → restore native sizes; on → apply current scale.
             plugin.RequestResetAndReapply();
         }
 
@@ -47,24 +46,18 @@ public class MainWindow : Window, IDisposable
             cfg.Save();
         }
 
-        // Wait until the slider is released so we don't thrash mid-drag.
         if (ImGui.IsItemDeactivatedAfterEdit())
             plugin.RequestResetAndReapply();
 
-        ImGui.TextDisabled("1.00x = game default. Higher = sharper Character / Try On / Plate previews.");
+        ImGui.TextDisabled("1.00× = game default. Higher looks sharper but costs more GPU.");
 
         ImGui.EndDisabled();
 
-        ImGuiHelpers.ScaledDummy(4f);
-
-        if (cfg.EnablePreviewUpscale)
-            ImGui.Text($"Status: on @ {cfg.PreviewResolutionScale:F2}x — {plugin.LiveUpscaler.LastStatus}");
-        else
-            ImGui.TextDisabled($"Status: off — {plugin.LiveUpscaler.LastStatus}");
-
         ImGuiHelpers.ScaledDummy(6f);
 
-        if (ImGui.Button("Debug…"))
-            plugin.ToggleDebugUi();
+        if (cfg.EnablePreviewUpscale)
+            ImGui.Text($"Status: on @ {cfg.PreviewResolutionScale:F2}× — {plugin.LiveUpscaler.LastStatus}");
+        else
+            ImGui.TextDisabled($"Status: off — {plugin.LiveUpscaler.LastStatus}");
     }
 }

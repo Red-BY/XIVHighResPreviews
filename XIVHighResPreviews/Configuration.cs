@@ -6,7 +6,7 @@ namespace XIVHighResPreviews;
 [Serializable]
 public class Configuration : IPluginConfiguration
 {
-    public int Version { get; set; } = 7;
+    public int Version { get; set; } = 8;
 
     /// <summary>
     /// Multiplier applied to live CharaView render targets and matching viewports.
@@ -33,8 +33,8 @@ public class Configuration : IPluginConfiguration
     /// </summary>
     public bool SkipScalingColorUnorm { get; set; } = true;
 
-    /// <summary>Log viewport / clear rect scale events.</summary>
-    public bool LogPreviewTextureCreates { get; set; } = false;
+    /// <summary>Log viewport / clear rect scale events at Debug level.</summary>
+    public bool LogViewportScales { get; set; } = false;
 
     public void Save()
     {

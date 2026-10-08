@@ -38,7 +38,7 @@ public sealed unsafe class ViewportHook : IDisposable
             SetMultiViewportsDetour);
 
         // Start disabled — Plugin enables when upscaling + preview activity requires it.
-        log.Information("Prepared ImmediateContext.SetViewport / SetMultiViewports hooks (disabled until needed).");
+        log.Debug("Prepared ImmediateContext.SetViewport / SetMultiViewports hooks (disabled until needed).");
     }
 
     public int ViewportScaleCount { get; private set; }
@@ -69,8 +69,6 @@ public sealed unsafe class ViewportHook : IDisposable
         }
     }
 
-    public void ResetCounts() => ViewportScaleCount = 0;
-
     public void Dispose()
     {
         disposed = true;
@@ -87,7 +85,7 @@ public sealed unsafe class ViewportHook : IDisposable
             if (PreviewScale.TryScalePreviewRect(ref rect, configuration, out var label))
             {
                 ViewportScaleCount++;
-                if (configuration.LogPreviewTextureCreates)
+                if (configuration.LogViewportScales)
                 {
                     log.Debug(
                         "SetViewport scaled [{Label}]: {L},{T}-{R},{B} -> {L2},{T2}-{R2},{B2}",

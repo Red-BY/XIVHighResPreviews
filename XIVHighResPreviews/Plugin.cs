@@ -54,7 +54,7 @@ public sealed class Plugin : IDalamudPlugin
 
         CommandManager.AddHandler(CommandName, new CommandInfo(OnCommand)
         {
-            HelpMessage = "Open settings. `/xivhrp debug` opens the inspector; `/xivhrp apply` upscales live textures."
+            HelpMessage = "Open settings. Optional: `/xivhrp apply`, `/xivhrp debug`."
         });
 
         PluginInterface.UiBuilder.Draw += WindowSystem.Draw;
@@ -242,21 +242,35 @@ public sealed class Plugin : IDalamudPlugin
 
     private static void MigrateConfiguration(Configuration cfg)
     {
+        var dirty = false;
+
         if (cfg.Version < 6)
         {
             cfg.AutoUpscaleLiveCharaView = true;
             cfg.Version = 6;
+            dirty = true;
         }
 
         if (cfg.Version < 7)
         {
             cfg.Version = 7;
-            cfg.Save();
+            dirty = true;
         }
-        else if (cfg.PreviewResolutionScale < PreviewScale.MinScale)
+
+        if (cfg.Version < 8)
+        {
+            // LogPreviewTextureCreates was renamed to LogViewportScales; default stays off.
+            cfg.Version = 8;
+            dirty = true;
+        }
+
+        if (cfg.PreviewResolutionScale < PreviewScale.MinScale)
         {
             cfg.PreviewResolutionScale = PreviewScale.MinScale;
-            cfg.Save();
+            dirty = true;
         }
+
+        if (dirty)
+            cfg.Save();
     }
 }

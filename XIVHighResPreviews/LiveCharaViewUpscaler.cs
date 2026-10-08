@@ -23,9 +23,8 @@ public sealed unsafe class LiveCharaViewUpscaler
         this.log = log;
     }
 
-    public int LastReplacedCount { get; private set; }
     public float? LastAppliedScale { get; private set; }
-    public string LastStatus { get; internal set; } = "Not run yet.";
+    public string LastStatus { get; internal set; } = "Waiting for a preview window.";
 
     /// <summary>
     /// True after a successful apply/check when no native-sized CharaView RTs remain
@@ -64,27 +63,6 @@ public sealed unsafe class LiveCharaViewUpscaler
     }
 
     /// <summary>
-    /// True if any live CharaView RT looks like a scaled known preview size
-    /// (viewport hooks still matter even with preview UI closed).
-    /// </summary>
-    public bool HasScaledLiveTextures()
-    {
-        var scale = LastAppliedScale is > 1.001f
-            ? LastAppliedScale.Value
-            : configuration.PreviewResolutionScale;
-        if (scale <= 1.001f)
-            return false;
-
-        var rtm = RenderTargetManager.Instance();
-        if (rtm == null)
-            return false;
-
-        return SpanHasScaled(rtm->CharaViewTextures, scale)
-               || SpanHasScaled(rtm->CharaViewGBuffers, scale)
-               || SpanHasScaled(rtm->CharaViewSemitransparentGBuffers, scale);
-    }
-
-    /// <summary>
     /// Restore any previously scaled CharaView RTs back to their native sizes,
     /// then apply the current configured scale (if upscaling is still active).
     /// </summary>
@@ -96,9 +74,9 @@ public sealed unsafe class LiveCharaViewUpscaler
         {
             IsSatisfied = true;
             LastStatus = reset == 0
-                ? "Upscaling off — already at native sizes (or no live CharaView RTs)."
-                : $"Upscaling off — reset {reset} texture(s) to native.";
-            log.Information("Live CharaView reset (no reapply): {Status}", LastStatus);
+                ? "Upscaling off."
+                : $"Upscaling off — restored {reset} texture(s).";
+            log.Debug("Live CharaView reset (no reapply): {Status}", LastStatus);
             return;
         }
 
@@ -134,19 +112,17 @@ public sealed unsafe class LiveCharaViewUpscaler
 
     public void Apply()
     {
-        LastReplacedCount = 0;
-
         if (!PreviewScale.IsActive(configuration))
         {
             IsSatisfied = true;
-            LastStatus = "Scaling inactive (enable it and set scale > 1.0).";
+            LastStatus = "Upscaling is off (enable it and set scale above 1.0×).";
             return;
         }
 
         var rtm = RenderTargetManager.Instance();
         if (rtm == null)
         {
-            LastStatus = "RenderTargetManager is null.";
+            LastStatus = "Graphics not ready yet.";
             return;
         }
 
@@ -156,6 +132,7 @@ public sealed unsafe class LiveCharaViewUpscaler
         // Only replace buffers the offscreen path re-renders into each frame.
         // ORM BackgroundTextures are uploaded/static — swapping them for empty RTs
         // blacks out the Character screen backdrop.
+        // Hardcoded aux offsets must be re-verified after each game patch.
         replaced += ReplaceSpan(rtm->CharaViewTextures, scale, "CharaViewTextures");
         replaced += ReplaceSpan(rtm->CharaViewGBuffers, scale, "CharaViewGBuffers");
         replaced += ReplaceSpan(rtm->CharaViewSemitransparentGBuffers, scale, "CharaViewSemitransparentGBuffers");
@@ -166,7 +143,6 @@ public sealed unsafe class LiveCharaViewUpscaler
         replaced += ReplaceField((Texture**)((byte*)rtm + 0x3C8), scale, "CharaViewPortraitAux");
         replaced += ReplaceField((Texture**)((byte*)rtm + 0x3E0), scale, "CharaViewCompositeMask");
 
-        LastReplacedCount = replaced;
         if (replaced > 0)
             LastAppliedScale = scale;
 
@@ -174,30 +150,13 @@ public sealed unsafe class LiveCharaViewUpscaler
         IsSatisfied = !NeedsApply();
 
         LastStatus = replaced == 0
-            ? "No native-sized CharaView textures found to replace (already scaled, or empty)."
-            : $"Replaced {replaced} live texture(s) at {scale:F2}x.";
+            ? "Already upscaled, or no preview textures yet."
+            : $"Upscaled {replaced} texture(s) at {scale:F2}×.";
 
         if (replaced > 0)
             log.Information("Live CharaView upscale: {Status}", LastStatus);
         else
             log.Debug("Live CharaView upscale: {Status}", LastStatus);
-    }
-
-    private bool SpanHasScaled(Span<Pointer<Texture>> span, float scale)
-    {
-        for (var i = 0; i < span.Length; i++)
-        {
-            var tex = span[i].Value;
-            if (tex == null)
-                continue;
-
-            var w = (int)tex->ActualWidth;
-            var h = (int)tex->ActualHeight;
-            if (PreviewSizes.TryUnscaleWithScale(w, h, scale, out _, out _))
-                return true;
-        }
-
-        return false;
     }
 
     private bool SpanNeedsUpscale(Span<Pointer<Texture>> span, float scale)
@@ -337,7 +296,7 @@ public sealed unsafe class LiveCharaViewUpscaler
             return false;
         }
 
-        log.Information(
+        log.Debug(
             "Live texture replace {Tag}: {W}×{H} -> {TW}×{TH} format={Format} flags={Flags:X}",
             tag,
             w,
