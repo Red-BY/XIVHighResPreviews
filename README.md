@@ -1,11 +1,11 @@
 # High Resolution Previews
 
-Dalamud plugin that lets you customize the render resolution of **in-game character preview windows** — Character, Try On, Inspect, Glamour / plates, banners, and similar UIs. Those views are drawn at a predefined resolution and usually look softer than the main game.
+A Dalamud plugin that lets you customize the render resolution of **in-game character preview windows** — Character, Try On, Inspect, Glamour plates, banners, and similar UIs. Those views are drawn at a predefined resolution and usually look softer than the main game.
 
 ## Features
 
 * Upscales live CharaView render targets (default **2×**)
-* Auto-applies when a preview UI opens
+* Applies automatically when a preview UI opens
 
 ## Install
 
@@ -22,7 +22,7 @@ This plugin is **not** on the official Dalamud plugin repository yet.
 | `/hrpreviews` | Open settings (enable + scale) |
 | `/hrpreviews debug` | Advanced options + CharaView inspector |
 
-Leave **Enable upscaling** on and set **Resolution scale** (e.g. `2.0×`). Open Character, Try On, Inspect, or Adventurer Plate — previews should look sharper.
+Leave **Enable upscaling** on and set **Resolution scale** (e.g. `2.0×`). When you open Character, Try On, Inspect, or Adventurer Plate, previews should look sharper.
 
 ## Known limitations
 
