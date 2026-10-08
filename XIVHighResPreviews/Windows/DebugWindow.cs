@@ -11,7 +11,7 @@ public class DebugWindow : Window, IDisposable
     private readonly Plugin plugin;
 
     public DebugWindow(Plugin plugin)
-        : base("XIV High Res Previews — Debug##Debug")
+        : base("High Resolution Previews — Debug##Debug")
     {
         SizeConstraints = new WindowSizeConstraints
         {
@@ -78,9 +78,6 @@ public class DebugWindow : Window, IDisposable
             plugin.LiveUpscaler.MarkNeedsRescan();
             plugin.RequestLiveApply();
         }
-
-        ImGui.SameLine();
-        ImGui.TextDisabled("/xivhrp apply");
 
         ImGui.TextWrapped(plugin.LiveUpscaler.LastStatus);
 

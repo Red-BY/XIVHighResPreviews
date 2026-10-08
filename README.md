@@ -1,4 +1,4 @@
-# XIV High Res Previews
+# High Resolution Previews
 
 Dalamud plugin that raises the render resolution of **in-game character preview windows** — Character, Try On, Inspect, Glamour / plates, banners, and similar UIs. Those views are drawn offscreen and usually look softer than the main game.
 
@@ -13,23 +13,22 @@ Dalamud plugin that raises the render resolution of **in-game character preview 
 This plugin is **not** on the official Dalamud plugin repository yet.
 
 1. Build from source (see [Development](#development)), **or** install from a custom plugin repository if you publish one.
-2. Enable **XIV High Res Previews** in `/xlplugins`.
-3. Open `/xivhrp` to adjust settings.
+2. Enable **High Resolution Previews** in `/xlplugins`.
+3. Open `/hrpreviews` to adjust settings.
 
 ## Usage
 
 | Command | Action |
 |---------|--------|
-| `/xivhrp` | Open settings (enable + scale) |
-| `/xivhrp apply` | Manually re-apply upscaling |
-| `/xivhrp debug` | Advanced options + CharaView inspector |
+| `/hrpreviews` | Open settings (enable + scale) |
+| `/hrpreviews debug` | Advanced options + CharaView inspector |
 
 Leave **Enable upscaling** on and set **Resolution scale** (e.g. `2.0×`). Open Character, Try On, Inspect, or Adventurer Plate — previews should look sharper.
 
 ## Known limitations
 
 * Adventurer Plate backgrounds can still glitch in some cases.
-* After changing scale, re-open the preview UI (or run `/xivhrp apply`) if buffers stay at the previous size.
+* After changing scale, re-open the preview UI if buffers stay at the previous size.
 * Higher scales increase GPU cost while a preview is open.
 * Relies on ClientStructs field layouts; a game patch may require an update.
 
@@ -52,7 +51,7 @@ Output: `XIVHighResPreviews/bin/x64/Release/XIVHighResPreviews/`
 ### Load as a dev plugin
 
 1. `/xlsettings` → Experimental → add the folder containing `XIVHighResPreviews.dll` as a Dev Plugin Location
-2. `/xlplugins` → Dev Tools → Installed Dev Plugins → enable **XIV High Res Previews**
+2. `/xlplugins` → Dev Tools → Installed Dev Plugins → enable **High Resolution Previews**
 
 ### How it works
 

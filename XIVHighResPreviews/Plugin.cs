@@ -17,7 +17,8 @@ public sealed class Plugin : IDalamudPlugin
     [PluginService] internal static IFramework Framework { get; private set; } = null!;
     [PluginService] internal static IAddonLifecycle AddonLifecycle { get; private set; } = null!;
 
-    private const string CommandName = "/xivhrp";
+    private const string CommandName = "/hrpreviews";
+    private const string DebugCommandName = "/hrpreviews debug";
 
     public Configuration Configuration { get; init; }
     public CharaViewInspector Inspector { get; } = new();
@@ -54,7 +55,12 @@ public sealed class Plugin : IDalamudPlugin
 
         CommandManager.AddHandler(CommandName, new CommandInfo(OnCommand)
         {
-            HelpMessage = "Open settings. Optional: `/xivhrp apply`, `/xivhrp debug`."
+            HelpMessage = "Open settings."
+        });
+        // Help-only entry: chat still routes through /hrpreviews with "debug" as args.
+        CommandManager.AddHandler(DebugCommandName, new CommandInfo((_, _) => ToggleDebugUi())
+        {
+            HelpMessage = "Open advanced options and CharaView inspector."
         });
 
         PluginInterface.UiBuilder.Draw += WindowSystem.Draw;
@@ -65,7 +71,7 @@ public sealed class Plugin : IDalamudPlugin
         UpdateViewportHookGate();
 
         Log.Information(
-            "XIV High Res Previews loaded. Use /xivhrp. Upscale={Upscale} scale={Scale:F2}x autoLive={Auto}.",
+            "High Resolution Previews loaded. Use /hrpreviews. Upscale={Upscale} scale={Scale:F2}x autoLive={Auto}.",
             Configuration.EnablePreviewUpscale,
             Configuration.PreviewResolutionScale,
             Configuration.AutoUpscaleLiveCharaView);
@@ -89,18 +95,12 @@ public sealed class Plugin : IDalamudPlugin
         ViewportHook.Dispose();
 
         CommandManager.RemoveHandler(CommandName);
+        CommandManager.RemoveHandler(DebugCommandName);
     }
 
     private void OnCommand(string command, string args)
     {
         var trimmed = args.Trim();
-        if (trimmed.Equals("apply", StringComparison.OrdinalIgnoreCase))
-        {
-            LiveUpscaler.MarkNeedsRescan();
-            RequestLiveApply();
-            return;
-        }
-
         if (trimmed.Equals("debug", StringComparison.OrdinalIgnoreCase))
         {
             ToggleDebugUi();

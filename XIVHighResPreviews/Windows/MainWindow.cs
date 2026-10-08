@@ -11,7 +11,7 @@ public class MainWindow : Window, IDisposable
     private readonly Plugin plugin;
 
     public MainWindow(Plugin plugin)
-        : base("XIV High Res Previews##Main")
+        : base("High Resolution Previews##Main")
     {
         Flags = ImGuiWindowFlags.AlwaysAutoResize;
         SizeConstraints = new WindowSizeConstraints

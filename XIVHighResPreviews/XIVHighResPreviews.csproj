@@ -1,11 +1,11 @@
 <?xml version="1.0" encoding="utf-8"?>
 <Project Sdk="Dalamud.NET.Sdk/15.0.0">
   <PropertyGroup>
-    <Version>0.1.0.0</Version>
+    <Version>0.1.1.0</Version>
     <Author>Red-BY</Author>
-    <Name>XIV High Res Previews</Name>
-    <Punchline>Increase the render resolution of in-game character preview windows.</Punchline>
-    <Description>Raises the offscreen render resolution used by Character, Try On, Inspect, Glamour, Adventurer Plate, and similar preview windows so they look sharper than the game default.</Description>
+    <Name>High Resolution Previews</Name>
+    <Punchline>Increases the render resolution of in-game character preview windows.</Punchline>
+    <Description>Allows you to customize the render resolution used by Character, Try On, Inspect, Glamour, Adventurer Plate, and similar preview windows so they look sharper.</Description>
     <RepoUrl>https://github.com/Red-BY/XIVHighResPreviews</RepoUrl>
     <Tags>preview;resolution;chara;graphics</Tags>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
