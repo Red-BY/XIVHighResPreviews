@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Numerics;
 using Dalamud.Bindings.ImGui;
 using Dalamud.Interface.Utility;
@@ -13,10 +13,11 @@ public class MainWindow : Window, IDisposable
     public MainWindow(Plugin plugin)
         : base("XIV High Res Previews##Main")
     {
+        Flags = ImGuiWindowFlags.AlwaysAutoResize;
         SizeConstraints = new WindowSizeConstraints
         {
-            MinimumSize = new Vector2(520, 360),
-            MaximumSize = new Vector2(float.MaxValue, float.MaxValue)
+            MinimumSize = new Vector2(320, 0),
+            MaximumSize = new Vector2(480, float.MaxValue)
         };
 
         this.plugin = plugin;
@@ -26,78 +27,44 @@ public class MainWindow : Window, IDisposable
 
     public override void Draw()
     {
-        ImGui.TextWrapped(
-            "Live inspector for CharaView offscreen render targets. Open Character, Try On, Inspect, etc., then watch the matching slot populate.");
+        var cfg = plugin.Configuration;
 
-        if (ImGui.Button("Settings"))
-            plugin.ToggleConfigUi();
-
-        ImGui.SameLine();
-        ImGui.TextDisabled("Command: /xivhrp");
-
-        ImGuiHelpers.ScaledDummy(8f);
-
-        var snap = plugin.Inspector.Capture();
-
-        ImGui.Text($"RenderTargetManager: {(snap.RenderTargetManagerAvailable ? "ok" : "null")}");
-        ImGui.SameLine();
-        ImGui.Text($"| OffscreenRenderingManager: {(snap.OffscreenManagerAvailable ? "ok" : "null")}");
-
-        if (snap.RenderTargetManagerAvailable)
+        var enabled = cfg.EnablePreviewUpscale;
+        if (ImGui.Checkbox("Enable upscaling", ref enabled))
         {
-            ImGui.Text(
-                $"Main RT resolution: {snap.MainResolutionWidth}×{snap.MainResolutionHeight}  |  GraphicsRezoScale: {snap.GraphicsRezoScale:F3} / {snap.GraphicsRezoScaleY:F3}");
+            cfg.EnablePreviewUpscale = enabled;
+            cfg.Save();
+            // Off → restore native sizes; on → apply current scale.
+            plugin.RequestResetAndReapply();
         }
+
+        ImGui.BeginDisabled(!cfg.EnablePreviewUpscale);
+
+        var scale = cfg.PreviewResolutionScale;
+        if (ImGui.SliderFloat("Resolution scale", ref scale, PreviewScale.MinScale, PreviewScale.MaxScale, "%.2fx"))
+        {
+            cfg.PreviewResolutionScale = Math.Clamp(scale, PreviewScale.MinScale, PreviewScale.MaxScale);
+            cfg.Save();
+        }
+
+        // Wait until the slider is released so we don't thrash mid-drag.
+        if (ImGui.IsItemDeactivatedAfterEdit())
+            plugin.RequestResetAndReapply();
+
+        ImGui.TextDisabled("1.00x = game default. Higher = sharper Character / Try On / Plate previews.");
+
+        ImGui.EndDisabled();
+
+        ImGuiHelpers.ScaledDummy(4f);
+
+        if (cfg.EnablePreviewUpscale)
+            ImGui.Text($"Status: on @ {cfg.PreviewResolutionScale:F2}x — {plugin.LiveUpscaler.LastStatus}");
+        else
+            ImGui.TextDisabled($"Status: off — {plugin.LiveUpscaler.LastStatus}");
 
         ImGuiHelpers.ScaledDummy(6f);
 
-        if (!ImGui.BeginTable("CharaViewSlots", 5, ImGuiTableFlags.Borders | ImGuiTableFlags.RowBg | ImGuiTableFlags.SizingStretchProp))
-            return;
-
-        ImGui.TableSetupColumn("Slot");
-        ImGui.TableSetupColumn("Preview texture");
-        ImGui.TableSetupColumn("Allocated");
-        ImGui.TableSetupColumn("Format");
-        ImGui.TableSetupColumn("Background");
-        ImGui.TableHeadersRow();
-
-        foreach (var slot in snap.Slots)
-        {
-            ImGui.TableNextRow();
-
-            ImGui.TableNextColumn();
-            ImGui.TextUnformatted(slot.Label);
-
-            ImGui.TableNextColumn();
-            if (slot.HasTexture && slot.Texture is { } tex)
-                ImGui.Text($"{tex.ActualWidth}×{tex.ActualHeight}");
-            else
-                ImGui.TextDisabled("—");
-
-            ImGui.TableNextColumn();
-            if (slot.HasTexture && slot.Texture is { } texA)
-                ImGui.Text($"{texA.AllocatedWidth}×{texA.AllocatedHeight}");
-            else
-                ImGui.TextDisabled("—");
-
-            ImGui.TableNextColumn();
-            if (slot.HasTexture && slot.Texture is { } texF)
-                ImGui.TextUnformatted(texF.Format.ToString());
-            else
-                ImGui.TextDisabled("—");
-
-            ImGui.TableNextColumn();
-            if (slot.HasBackground && slot.Background is { } bg)
-                ImGui.Text($"{bg.ActualWidth}×{bg.ActualHeight}");
-            else
-                ImGui.TextDisabled("—");
-        }
-
-        ImGui.EndTable();
-
-        ImGuiHelpers.ScaledDummy(10f);
-        ImGui.Separator();
-        ImGui.TextWrapped(
-            "Next step: find where these textures are created/resized (likely alongside RenderTargetManager CharaView G-buffers) and intercept that path to allocate larger targets. Scale setting is stored but not applied yet.");
+        if (ImGui.Button("Debug…"))
+            plugin.ToggleDebugUi();
     }
 }

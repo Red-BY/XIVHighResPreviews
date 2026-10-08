@@ -7,21 +7,11 @@ namespace XIVHighResPreviews;
 
 /// <summary>
 /// Read-only probe for CharaView / offscreen character-preview render targets.
-/// See README "Research notes" for how these map to in-game UI.
 /// </summary>
 public sealed unsafe class CharaViewInspector
 {
     public const int SlotCount = 8;
 
-    /// <summary>
-    /// ClientObjectIndex usage documented in FFXIVClientStructs CharaView:
-    /// 0 Character / PvPCharacter;
-    /// 1 Inspect / CharaCard / Fashion / RetainerStatus;
-    /// 2 TryOn / GearSetPreview;
-    /// 3 Colorant;
-    /// 4 BannerList / BannerEdit / BannerUpdateView / FittingShop;
-    /// 0–7 BannerParty.
-    /// </summary>
     public static readonly string[] SlotLabels =
     [
         "0 — Character / PvPCharacter",
@@ -40,7 +30,8 @@ public sealed unsafe class CharaViewInspector
         uint ActualHeight,
         uint AllocatedWidth,
         uint AllocatedHeight,
-        TextureFormat Format);
+        TextureFormat Format,
+        TextureFlags Flags);
 
     public readonly record struct SlotInfo(
         int Index,
@@ -83,7 +74,6 @@ public sealed unsafe class CharaViewInspector
             if (tex != null)
                 texInfo = FromTexture(tex);
 
-            // Fallback / cross-check: span of resulting images on the manager
             if (texInfo == null && i < rtm->CharaViewTextures.Length)
             {
                 var ptr = rtm->CharaViewTextures[i].Value;
@@ -123,5 +113,6 @@ public sealed unsafe class CharaViewInspector
         tex->ActualHeight,
         tex->AllocatedWidth,
         tex->AllocatedHeight,
-        tex->TextureFormat);
+        tex->TextureFormat,
+        tex->Flags);
 }

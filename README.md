@@ -4,11 +4,22 @@ Dalamud plugin that aims to raise the render resolution of **in-game character p
 
 ## Status
 
-Scaffold + live **CharaView render-target inspector**. Upscaling is not applied yet — config stores a scale factor for the next step.
+Live **CharaView inspector** plus **live RT replacement** of native-sized CharaView textures (auto on preview UI open). Viewport hooks are enabled only while a preview addon is open.
+
+Create-time `CreateTexture2D` interception was removed: plate create scaling changed buffer sizes without sharpening the character model; replacing the live CharaView slots is what actually upscales the render.
 
 | Command | Action |
 |---------|--------|
-| `/xivhrp` | Open the inspector |
+| `/xivhrp` | Open settings (enable + scale) |
+| `/xivhrp debug` | Open the CharaView inspector / debug options |
+| `/xivhrp apply` | Manually upscale live CharaView textures |
+
+### Trying it in-game
+
+1. Rebuild and reload the plugin.
+2. Settings: leave **Enable preview upscale** and **Auto-upscale live CharaView** on, scale e.g. `2.0`.
+3. Open **Character**, **Try On**, **Inspect**, or **Adventurer Plate**.
+4. In `/xivhrp`, live sizes should move off native (e.g. `576×960` → `1152×1920`).
 
 ## Development
 
@@ -68,14 +79,34 @@ FFXIVClientStructs already maps the relevant graphics objects. This is the path 
 3. Note `ActualWidth×ActualHeight` on the matching slot vs main RT resolution.
 4. That delta is what we want to change.
 
-### Likely next steps to *change* resolution
+### Empirical findings
 
-| Approach | Idea | Risk |
-|----------|------|------|
-| Hook texture creation used for CharaView RTs | Intercept width/height when `CreateTexture2D` (or the RTM recreate path) runs for CharaView buffers | Need a reliable way to identify CharaView allocations vs main scene |
-| Patch / call RT recreate after patching size inputs | Find the function that (re)builds `_charaViewTextures` / G-buffers and feed larger dimensions | Signature maintenance every patch |
-| Replace textures after creation | Allocate larger `Texture`s and swap pointers in `RenderTargetManager` | Must also fix any viewport/scissor/UI draw that assumes original size |
-| Agent / Atk image node scale only | Upscale how the UI displays the texture | Does **not** increase render quality; only display size |
+| Observation | Size | Notes |
+|-------------|------|-------|
+| Live `CharaView` texture `ActualWidth×Height` | **576×960** (exact 3:5) | Independent of display / UI scale |
+| `CreateTexture2D` for Character / preview windows | **192×320** (exact 3:5, **⅓ of 576×960**) | Primary create-time size for Character UI |
+| `CreateTexture2D` on login | **288×480** (exact 3:5, **½ of 576×960**) | Often BC compressed |
+| `CreateTexture2D` opening Adventurer Plate | **512×840** (≈3:5) | `2× BGRA` + `1× BC7`, flags often `0x804` |
+| `CreateTexture2D` at 576×960 | **not observed** | Live size is 3× the Character create size |
+
+Implications:
+
+* Preview size is **not** derived from the main swapchain.
+* Character create **`192×320 × 3 = 576×960`** — live Actual* may be a different/composited buffer, or metadata at display scale.
+* Plate: upscale BGRA, skip BC7. Same Immutable-upload rules if flags match.
+
+Hex immediates: `0xC0`/`0x140` (192×320), `0x120`/`0x1E0` (288×480), `0x200`/`0x348` (512×840), `0x240`/`0x3C0` (576×960).
+
+### Implemented: live CharaView replace
+
+Replaces native-sized `RenderTargetManager` CharaView textures / G-buffers / aux targets on preview addon open. Skips BC compressed when configured. Viewport scaling only while a preview UI is open. **Min scale 1.0×**. Auto-apply on by default.
+
+### Remaining risks / next steps
+
+| Issue | Follow-up |
+|-------|-----------|
+| Plate BG corruption | Mismatch between preview RT and background size |
+| Scale change after apply | Re-open UI or `/xivhrp apply` if buffers stay at previous scale |
 
 Haselnussbomber’s ClientStructs work on `RenderTargetManager` (Dawntrail) noted interest in CharaView rendering but stopped at field mapping — so the recreate/size source is still an open reverse-engineering target.
 
