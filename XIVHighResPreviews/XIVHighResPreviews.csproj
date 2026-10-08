@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Project Sdk="Dalamud.NET.Sdk/15.0.0">
+  <PropertyGroup>
+    <Version>0.0.0.1</Version>
+    <Author>Red-BY</Author>
+    <Name>XIV High Res Previews</Name>
+    <Punchline>Increase the render resolution of in-game character preview windows.</Punchline>
+    <Description>Character preview surfaces (Character, Try On, Inspect, Glamour, plates, etc.) are rendered offscreen at a
+      resolution independent of the main game. This plugin aims to raise or control that preview render resolution.</Description>
+    <RepoUrl>https://github.com/Red-BY/XIVHighResPreviews</RepoUrl>
+    <Tags>preview;resolution;chara;graphics</Tags>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+  </PropertyGroup>
+</Project>

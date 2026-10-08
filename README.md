@@ -1,78 +1,99 @@
-> ⚠️ **Don't click Fork!**
-> 
-> This is a GitHub Template repo. If you want to use this for a plugin, [use this template][new-repo] to make a new repo!
->
-> ![image](https://github.com/goatcorp/SamplePlugin/assets/16760685/d9732094-e1ed-4769-a70b-58ed2b92580c)
+# XIV High Res Previews
 
-# SamplePlugin
+Dalamud plugin that aims to raise the render resolution of **in-game character preview windows** (Character, Try On, Inspect, Glamour / plates, banners, etc.). Those views are drawn by a separate offscreen path and usually do **not** match the main game resolution.
 
-[![Use This Template badge](https://img.shields.io/badge/Use%20This%20Template-0?logo=github&labelColor=grey)][new-repo]
+## Status
 
+Scaffold + live **CharaView render-target inspector**. Upscaling is not applied yet — config stores a scale factor for the next step.
 
-Simple example plugin for Dalamud.
+| Command | Action |
+|---------|--------|
+| `/xivhrp` | Open the inspector |
 
-This is not designed to be the simplest possible example, but it is also not designed to cover everything you might want to do. For more detailed questions, come ask in [the Discord](https://discord.gg/holdshift).
-
-## Main Points
-
-* Simple functional plugin
-  * Slash command
-  * Main UI
-  * Settings UI
-  * Image loading
-  * Plugin json
-* Simple, slightly-improved plugin configuration handling
-* Project organization
-  * Copies all necessary plugin files to the output directory
-    * Does not copy dependencies that are provided by dalamud
-    * Output directory can be zipped directly and have exactly what is required
-  * Hides data files from visual studio to reduce clutter
-    * Also allows having data files in different paths than VS would usually allow if done in the IDE directly
-
-
-The intention is less that any of this is used directly in other projects, and more to show how similar things can be done.
-
-## How To Use
-
-### Getting Started
-
-To begin, [clone this template repository][new-repo] to your own GitHub account. This will automatically bring in everything you need to get a jumpstart on development. You do not need to fork this repository unless you intend to contribute modifications to it.
-
-Be sure to also check out the [Dalamud Developer Docs][dalamud-docs] for helpful information about building your own plugin. The Developer Docs includes helpful information about all sorts of things, including [how to submit][submit] your newly-created plugin to the official repository. Assuming you use this template repository, the provided project build configuration and license are already chosen to make everything a breeze.
-
-[new-repo]: https://github.com/new?template_name=SamplePlugin&template_owner=goatcorp
-[dalamud-docs]: https://dalamud.dev
-[submit]: https://dalamud.dev/plugin-publishing/submission
+## Development
 
 ### Prerequisites
 
-SamplePlugin assumes all the following prerequisites are met:
+* XIVLauncher + Dalamud (game launched with Dalamud at least once)
+* .NET SDK compatible with `Dalamud.NET.Sdk` (see CI: 10.0.x)
+* Optional: `DALAMUD_HOME` if Dalamud is not in the default XIVLauncher path
 
-* XIVLauncher, FINAL FANTASY XIV, and Dalamud have all been installed and the game has been run with Dalamud at least once.
-* XIVLauncher is installed to its default directories and configurations.
-  * If a custom path is required for Dalamud's dev directory, it must be set with the `DALAMUD_HOME` environment variable.
-* A .NET Core 8 SDK has been installed and configured, or is otherwise available. (In most cases, the IDE will take care of this.)
+### Build
 
-### Building
+```bash
+dotnet build XIVHighResPreviews.slnx -c Debug
+```
 
-1. Open up `SamplePlugin.sln` in your C# editor of choice (likely [Visual Studio](https://visualstudio.microsoft.com) or [JetBrains Rider](https://www.jetbrains.com/rider/)).
-2. Build the solution. By default, this will build a `Debug` build, but you can switch to `Release` in your IDE.
-3. The resulting plugin can be found at `SamplePlugin/bin/x64/Debug/SamplePlugin.dll` (or `Release` if appropriate.)
+Output: `XIVHighResPreviews/bin/x64/Debug/XIVHighResPreviews/`
 
-### Activating in-game
+### Load in-game
 
-1. Launch the game and use `/xlsettings` in chat or `xlsettings` in the Dalamud Console to open up the Dalamud settings.
-    * In here, go to `Experimental`, and add the full path to the `SamplePlugin.dll` to the list of Dev Plugin Locations.
-2. Next, use `/xlplugins` (chat) or `xlplugins` (console) to open up the Plugin Installer.
-    * In here, go to `Dev Tools > Installed Dev Plugins`, and the `SamplePlugin` should be visible. Enable it.
-3. You should now be able to use `/pmycommand` (chat) or `pmycommand` (console)!
+1. `/xlsettings` → Experimental → add the folder containing `XIVHighResPreviews.dll` as a Dev Plugin Location
+2. `/xlplugins` → Dev Tools → Installed Dev Plugins → enable **XIV High Res Previews**
+3. `/xivhrp` while a preview UI is open
 
-Note that you only need to add it to the Dev Plugin Locations once (Step 1); it is preserved afterwards. You can disable, enable, or load your plugin on startup through the Plugin Installer.
+## Research notes — finding preview render targets
 
-### Reconfiguring for your own uses
+FFXIVClientStructs already maps the relevant graphics objects. This is the path the inspector uses.
 
-Replace all references to `SamplePlugin` in all the files and filenames with your desired name, then start building the plugin of your dreams. You'll figure it out 😁
+### Key types
 
-Dalamud will load the JSON file (by default, `SamplePlugin/SamplePlugin.json`) next to your DLL and use it for metadata, including the description for your plugin in the Plugin Installer. Make sure to update this with information relevant to _your_ plugin!
+1. **`Client::UI::Misc::CharaView`**  
+   Logical preview controller used by Character, Inspect, Try On, etc.  
+   Important fields: `ClientObjectIndex` (0–7), `State`, camera, agent callbacks.  
+   Docs comment which UI uses which index (0 = Character, 1 = Inspect/CharaCard, 2 = Try On, …).
 
-All participation in this repository is governed by our [Code of Conduct](https://dalamud.dev/code-of-conduct). If you used AI tooling at any point, review the [AI Usage Policy](https://dalamud.dev/plugin-publishing/ai-policy) and disclose your level of AI use. Entirely AI-generated submissions will be rejected, and undisclosed AI use may result in a ban.
+2. **`Client::Graphics::Render::OffscreenRenderingManager`**  
+   Renderer responsible for CharaViews. Holds up to **8 cameras** and **8 background textures**.  
+   Singleton: `OffscreenRenderingManager.Instance()`.
+
+3. **`Client::Graphics::Render::RenderTargetManager`**  
+   Owns the actual CharaView framebuffer set:
+   - `CharaViewTextures[8]` — final preview images
+   - `CharaViewGBuffers` / depth / view-position equivalents
+   - `CharaViewSemitransparentGBuffers`
+   - `GetCharaViewTexture(clientObjectIndex)` — preferred accessor for the result texture  
+   Also exposes main `Resolution_Width` / `Resolution_Height` and `GraphicsRezoScale` (main scene; not necessarily CharaView size).
+
+4. **`Client::Graphics::Kernel::Texture`**  
+   Read size from `ActualWidth` / `ActualHeight` (and `AllocatedWidth` / `AllocatedHeight` when dynamic resolution pads the allocation).
+
+5. **`GraphicsConfig`**  
+   Has main-scene resolution scale (`GraphicsRezoScale`) and portrait/GPose flags. **No dedicated CharaView resolution field** is mapped today — preview size is likely chosen inside the render-target (re)allocation path, not a simple config option.
+
+### Practical inspection loop
+
+1. Open `/xivhrp`.
+2. Open an in-game preview (e.g. Character window → slot 0, Try On → slot 2).
+3. Note `ActualWidth×ActualHeight` on the matching slot vs main RT resolution.
+4. That delta is what we want to change.
+
+### Likely next steps to *change* resolution
+
+| Approach | Idea | Risk |
+|----------|------|------|
+| Hook texture creation used for CharaView RTs | Intercept width/height when `CreateTexture2D` (or the RTM recreate path) runs for CharaView buffers | Need a reliable way to identify CharaView allocations vs main scene |
+| Patch / call RT recreate after patching size inputs | Find the function that (re)builds `_charaViewTextures` / G-buffers and feed larger dimensions | Signature maintenance every patch |
+| Replace textures after creation | Allocate larger `Texture`s and swap pointers in `RenderTargetManager` | Must also fix any viewport/scissor/UI draw that assumes original size |
+| Agent / Atk image node scale only | Upscale how the UI displays the texture | Does **not** increase render quality; only display size |
+
+Haselnussbomber’s ClientStructs work on `RenderTargetManager` (Dawntrail) noted interest in CharaView rendering but stopped at field mapping — so the recreate/size source is still an open reverse-engineering target.
+
+Useful starting signatures (from ClientStructs, verify each patch):
+
+* `RenderTargetManager.Instance` static address
+* `GetCharaViewTexture` member function
+* `OffscreenRenderingManager.Instance` static address
+* `Texture.CreateTexture2D` / `Device.CreateTexture2D`
+
+### References
+
+* [OffscreenRenderingManager.cs](https://github.com/aers/FFXIVClientStructs/blob/main/FFXIVClientStructs/FFXIV/Client/Graphics/Render/OffscreenRenderingManager.cs)
+* [RenderTargetManager.cs](https://github.com/aers/FFXIVClientStructs/blob/main/FFXIVClientStructs/FFXIV/Client/Graphics/Render/RenderTargetManager.cs)
+* [CharaView.cs](https://github.com/aers/FFXIVClientStructs/blob/main/FFXIVClientStructs/FFXIV/Client/UI/Misc/CharaView.cs)
+* [Texture.cs](https://github.com/aers/FFXIVClientStructs/blob/main/FFXIVClientStructs/FFXIV/Client/Graphics/Kernel/Texture.cs)
+* [ClientStructs PR #1128](https://github.com/aers/FFXIVClientStructs/pull/1128) (RenderTargetManager / GraphicsConfig update)
+
+## License
+
+AGPL-3.0 (inherited from the SamplePlugin template). See `LICENSE.md`.
