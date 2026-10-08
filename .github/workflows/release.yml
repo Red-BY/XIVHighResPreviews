@@ -1,0 +1,51 @@
+name: Release Builder for XIVHighResPreviews
+
+on:
+  push:
+    tags:
+      - 'v*'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: windows-2022
+
+    env:
+      Solution_Name: XIVHighResPreviews
+
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v5
+
+    - name: Install .NET
+      uses: actions/setup-dotnet@v5
+      with:
+        dotnet-version: 10.0.x
+
+    - name: Download Dalamud
+      run: |
+        Invoke-WebRequest -Uri https://goatcorp.github.io/dalamud-distrib/latest.zip -OutFile latest.zip
+        Expand-Archive -Force latest.zip "$env:AppData\XIVLauncher\addon\Hooks\dev"
+
+    - name: Build with dotnet
+      run: dotnet build --configuration Release
+
+    - name: Store artifacts
+      uses: actions/upload-artifact@v4
+      with:
+        name: XIVHighResPreviews
+        path: .\XIVHighResPreviews\bin\x64\Release\XIVHighResPreviews\*
+        if-no-files-found: error
+        retention-days: 90
+
+    - name: Create GitHub Release
+      if: startsWith(github.ref, 'refs/tags/')
+      uses: softprops/action-gh-release@v2
+      with:
+        generate_release_notes: true
+        files: |
+          XIVHighResPreviews/bin/x64/Release/XIVHighResPreviews/latest.zip
+          XIVHighResPreviews/bin/x64/Release/XIVHighResPreviews/XIVHighResPreviews.json
