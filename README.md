@@ -1,12 +1,11 @@
 # High Resolution Previews
 
-Dalamud plugin that raises the render resolution of **in-game character preview windows** — Character, Try On, Inspect, Glamour / plates, banners, and similar UIs. Those views are drawn offscreen and usually look softer than the main game.
+Dalamud plugin that lets you customize the render resolution of **in-game character preview windows** — Character, Try On, Inspect, Glamour / plates, banners, and similar UIs. Those views are drawn at a predefined resolution and usually look softer than the main game.
 
 ## Features
 
 * Upscales live CharaView render targets (default **2×**)
 * Auto-applies when a preview UI opens
-* Scales matching viewports and skips BC plate chrome by default
 
 ## Install
 
@@ -27,8 +26,7 @@ Leave **Enable upscaling** on and set **Resolution scale** (e.g. `2.0×`). Open 
 
 ## Known limitations
 
-* Adventurer Plate backgrounds can still glitch in some cases.
-* After changing scale, re-open the preview UI if buffers stay at the previous size.
+* After changing scale, reopen the preview UI if buffers stay at the previous size.
 * Higher scales increase GPU cost while a preview is open.
 * Relies on ClientStructs field layouts; a game patch may require an update.
 
@@ -55,7 +53,7 @@ Output: `XIVHighResPreviews/bin/x64/Release/XIVHighResPreviews/`
 
 ### How it works
 
-Preview windows use `Client::UI::Misc::CharaView` and offscreen buffers owned by `RenderTargetManager` / `OffscreenRenderingManager`. Native live size is typically **576×960**. This plugin replaces those live render targets at the configured scale and, while a preview addon is open, scales matching `SetViewport` rects so the game does not draw into a corner of the larger texture.
+Preview windows use `Client::UI::Misc::CharaView` and offscreen buffers owned by `RenderTargetManager` / `OffscreenRenderingManager`. The native live size is typically **576×960**. This plugin replaces those live render targets at the configured scale and, while a preview addon is open, scales matching `SetViewport` rects so the game does not draw into a corner of the larger texture.
 
 Useful ClientStructs references:
 
